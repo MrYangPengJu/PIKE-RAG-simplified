@@ -1,0 +1,100 @@
+# Environment Variable Setting
+################################################################################
+dotenv_path: null
+
+
+# Logging Setting
+################################################################################
+log_root_dir: logs/biology/qa # 生成的日志路径
+
+# experiment_name: would be used to create log_dir = log_root_dir/experiment_name/
+experiment_name: qa_with_chunk_reference 
+
+# test_jsonl_filename: would be used to create test_jsonl_path = log_dir/test_jsonl_filename;
+#   if set to null, the experiment_name would be used
+test_jsonl_filename: null
+
+# Number of rounds you want to test. min, max, avg. accuracy will be reported if multiple rounds.
+# 此处用于控制需要进行几轮测试，即同一组问题运行几次，以评估稳健性
+test_rounds: 1
+
+
+# Workflow Setting
+################################################################################
+workflow:
+  module_path: pikerag.workflows.qa
+  class_name: QaWorkflow
+
+
+# Testing Suite Setting
+################################################################################
+test_loading:
+  module: my_utils                   # 加载问题用的工具代码路径
+  name: load_open_qa_dataset         # 使用的函数
+  args:
+    path: test_question.jsonl        # 测试问题的文件
+
+
+# Prompt Setting
+################################################################################
+qa_protocol:
+  module_path: pikerag.prompts.qa
+  attr_name: generation_qa_protocol  # 使用自由问答协议
+  template_partial:
+    knowledge_domain: medical        # 可自定义为 medical, general 等
+
+
+
+# LLM Setting
+################################################################################
+llm_client: 
+  module_path: pikerag.llm_client   # 该路径下为配置大模型的相关代码
+  class_name: LocalDeepSeekClient   # 如果需要使用本地模型，需要自定义实现这个类
+  args: {}
+
+  llm_config:
+    model_path: ./myLLM             # 此处是本地大模型文件夹路径，该路径下应包含safetensors等文件
+    max_new_tokens: 1024            # 模型生成最大tokens
+
+  cache_config:
+    location_prefix: null
+    auto_dump: True
+
+
+# Retriever Setting
+################################################################################
+retriever:
+  module_path: pikerag.knowledge_retrievers
+  class_name: QaChunkRetriever               # or ChunkAtomRetriever / ChromaQaRetriever etc.
+  args:
+    retrieve_k: 8                            # 最多从文档库中检索出 8 个相关文档片段（chunks）作为上下文输入给 LLM。
+    retrieve_score_threshold: 0.5            # 大于等于 0.5 的文档片段才会被保留。
+
+    retrieval_query:
+      module_path: pikerag.knowledge_retrievers.query_parsers
+      func_name: question_as_query           # 可以根据是选择题还是开放式问题进行设置，详情需要参考代码，此处设置的开放式问答
+
+    vector_store:
+      collection_name: your_collection_name  # 检索文档的索引名称
+
+      id_document_loading:                   # 参考文档的加载函数
+        module_path: my_utils                # 填写工具包的路径
+        func_name: load_ids_and_chunks       # 使用的函数
+        args:
+          chunk_file_dir: chunks             # 存放分片文档（参考文档）的目录
+
+      embedding_setting:
+        args:
+          model_name: "sentence-transformers/all-MiniLM-L6-v2"
+          model_kwargs:
+            device: "cuda:0"                 # 默认使用第一个GPU
+          encode_kwargs:
+            normalize_embeddings: True
+
+
+
+# Evaluator Setting
+################################################################################
+evaluator:
+  metrics:
+    - ExactMatch
