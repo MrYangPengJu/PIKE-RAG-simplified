@@ -53,6 +53,6 @@ with open("hospital_info.pkl", "wb") as fout:
 This project is a simplified version of [PIKE-RAG](https://github.com/microsoft/PIKE-RAG), originally developed by Microsoft and released under the MIT License.
 
 Copyright (c) Microsoft Corporation  
-Copyright (c) 2025 HuoRen
+Copyright (c) 2025 MrYangPengJu
 
 This modified version is also released under the [MIT License](./LICENSE).
